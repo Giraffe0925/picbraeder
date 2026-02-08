@@ -4,16 +4,23 @@
  * BackgroundMosaic — Fills the page background with tiny tiles of
  * simulated user-generated CPPN designs, sorted by hue.
  * Clicking a tile uses that genome as a parent for breeding.
+ * 
+ * パフォーマンス改善:
+ * - シミュレーション数削減 (100→30, 50→20)
+ * - 遅延読み込み（requestIdleCallback）
+ * - 段階的描画
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { generateSimulatedDesigns, type SimulatedDesign } from '@/lib/cppn/simulate';
 import { evaluate } from '@/lib/cppn/network';
 import type { Genome } from '@/lib/cppn/genome';
+import { useUser } from '@/store/userStore';
 
 const TILE_SIZE = 32;     // pixels per tile
-const USER_COUNT = 100;
-const GENERATIONS = 50;
+const USER_COUNT = 30;    // 100 → 30 パフォーマンス改善
+const GENERATIONS = 20;   // 50 → 20 パフォーマンス改善
+const BATCH_SIZE = 10;    // 一度に描画するタイル数
 
 interface BackgroundMosaicProps {
   onSelectParent: (genome: Genome) => void;
@@ -23,6 +30,8 @@ export default function BackgroundMosaic({ onSelectParent }: BackgroundMosaicPro
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const designsRef = useRef<SimulatedDesign[]>([]);
   const colsRef = useRef(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const { userData } = useUser();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -39,41 +48,92 @@ export default function BackgroundMosaic({ onSelectParent }: BackgroundMosaicPro
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    setTimeout(() => {
-      const designs = generateSimulatedDesigns(USER_COUNT, GENERATIONS);
-      designsRef.current = designs;
+    // 初期状態: 暗い背景で塗りつぶし
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      for (let i = 0; i < totalTiles; i++) {
-        const design = designs[i % designs.length];
-        const col = i % cols;
-        const row = Math.floor(i / cols);
-        const ox = col * TILE_SIZE;
-        const oy = row * TILE_SIZE;
+    // 遅延読み込み: requestIdleCallbackがあれば使用
+    const scheduleWork = (callback: () => void) => {
+      if ('requestIdleCallback' in window) {
+        (window as Window & { requestIdleCallback: (cb: IdleRequestCallback) => void })
+          .requestIdleCallback(callback, { timeout: 500 });
+      } else {
+        setTimeout(callback, 50);
+      }
+    };
 
-        const imgData = ctx.createImageData(TILE_SIZE, TILE_SIZE);
-        const pixels = imgData.data;
-
-        for (let iy = 0; iy < TILE_SIZE; iy++) {
-          const y = (iy / (TILE_SIZE - 1)) * 2 - 1;
-          for (let ix = 0; ix < TILE_SIZE; ix++) {
-            const x = (ix / (TILE_SIZE - 1)) * 2 - 1;
-            const out = evaluate(
-              design.genome.nodes,
-              design.genome.connections,
-              x, y, 0,
-            );
-            const idx = (iy * TILE_SIZE + ix) * 4;
-            pixels[idx]     = Math.round(Math.max(0, Math.min(1, out.r)) * 255);
-            pixels[idx + 1] = Math.round(Math.max(0, Math.min(1, out.g)) * 255);
-            pixels[idx + 2] = Math.round(Math.max(0, Math.min(1, out.b)) * 255);
-            pixels[idx + 3] = 255;
+    scheduleWork(() => {
+      // ユーザーの保存済み作品を優先表示
+      const userDesigns: SimulatedDesign[] = [];
+      if (userData?.savedWorks) {
+        for (const work of userData.savedWorks) {
+          if (work.genome) {
+            userDesigns.push({
+              genome: work.genome as Genome,
+              hue: 0  // hue計算は省略
+            });
           }
         }
-
-        ctx.putImageData(imgData, ox, oy);
       }
-    }, 100);
-  }, []);
+
+      // シミュレーションデータを生成
+      const simulatedDesigns = generateSimulatedDesigns(USER_COUNT, GENERATIONS);
+
+      // ユーザー作品を先頭に配置
+      const allDesigns = [...userDesigns, ...simulatedDesigns];
+      designsRef.current = allDesigns;
+
+      // 段階的描画
+      let currentTile = 0;
+
+      const drawBatch = () => {
+        if (currentTile >= totalTiles) {
+          setIsLoading(false);
+          return;
+        }
+
+        const endTile = Math.min(currentTile + BATCH_SIZE, totalTiles);
+
+        for (let i = currentTile; i < endTile; i++) {
+          const design = allDesigns[i % allDesigns.length];
+          const col = i % cols;
+          const row = Math.floor(i / cols);
+          const ox = col * TILE_SIZE;
+          const oy = row * TILE_SIZE;
+
+          const imgData = ctx.createImageData(TILE_SIZE, TILE_SIZE);
+          const pixels = imgData.data;
+
+          for (let iy = 0; iy < TILE_SIZE; iy++) {
+            const y = (iy / (TILE_SIZE - 1)) * 2 - 1;
+            for (let ix = 0; ix < TILE_SIZE; ix++) {
+              const x = (ix / (TILE_SIZE - 1)) * 2 - 1;
+              const out = evaluate(
+                design.genome.nodes,
+                design.genome.connections,
+                x, y, 0,
+              );
+              const idx = (iy * TILE_SIZE + ix) * 4;
+              pixels[idx] = Math.round(Math.max(0, Math.min(1, out.r)) * 255);
+              pixels[idx + 1] = Math.round(Math.max(0, Math.min(1, out.g)) * 255);
+              pixels[idx + 2] = Math.round(Math.max(0, Math.min(1, out.b)) * 255);
+              pixels[idx + 3] = 255;
+            }
+          }
+
+          ctx.putImageData(imgData, ox, oy);
+        }
+
+        currentTile = endTile;
+
+        // 次のバッチを遅延実行
+        scheduleWork(drawBatch);
+      };
+
+      // 最初のバッチを開始
+      drawBatch();
+    });
+  }, [userData?.savedWorks]);
 
   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const designs = designsRef.current;
@@ -96,12 +156,19 @@ export default function BackgroundMosaic({ onSelectParent }: BackgroundMosaicPro
   }, [onSelectParent]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      onClick={handleClick}
-      className="fixed inset-0 w-full h-full opacity-25 cursor-pointer"
-      style={{ zIndex: 0 }}
-      title="Click a tile to use as parent"
-    />
+    <>
+      <canvas
+        ref={canvasRef}
+        onClick={handleClick}
+        className="fixed inset-0 w-full h-full opacity-25 cursor-pointer"
+        style={{ zIndex: 0 }}
+        title="Click a tile to use as parent"
+      />
+      {isLoading && (
+        <div className="fixed bottom-4 right-4 text-xs text-neutral-500 z-10">
+          Loading patterns...
+        </div>
+      )}
+    </>
   );
 }

@@ -37,12 +37,12 @@ export interface Genome {
 
 // ── Mutation probabilities ────────────────────────────────────────
 
-const PROB_ADD_NODE = 0.03;
-const PROB_ADD_CONN = 0.05;
+const PROB_ADD_NODE = 0.08;      // 3% → 8% ランダム性強化
+const PROB_ADD_CONN = 0.12;      // 5% → 12% ランダム性強化
 const PROB_MUTATE_WEIGHT = 0.80;
 const PROB_PERTURB = 0.90;
-const WEIGHT_STEP = 0.5;
-const PROB_MUTATE_ACTIVATION = 0.05;
+const WEIGHT_STEP = 0.8;         // 0.5 → 0.8 より大きな変化
+const PROB_MUTATE_ACTIVATION = 0.15; // 5% → 15% ランダム性強化
 const PROB_TOGGLE_CONN = 0.02;
 
 // ── Global innovation counter ─────────────────────────────────────
