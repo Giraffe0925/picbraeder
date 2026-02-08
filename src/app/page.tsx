@@ -3,15 +3,18 @@
 import { useState, useEffect } from 'react';
 import BreederGrid from '@/components/BreederGrid';
 import MyPage from '@/components/MyPage';
+import CommunityDesignsModal from '@/components/CommunityDesignsModal';
 import { EvolutionProvider, useEvolutionStore, type SessionData } from '@/store/evolutionStore';
 import { UserProvider, useUser, type SessionHistory } from '@/store/userStore';
 import UserMenu from '@/components/UserMenu';
+import type { Genome } from '@/lib/cppn/genome';
 
 /** メインアプリケーションのラッパー（内部コンポーネント） */
 function AppContent() {
   const { isLoggedIn, userData, saveToHistory } = useUser();
   const evolution = useEvolutionStore();
   const [showMyPage, setShowMyPage] = useState(false);
+  const [showCommunity, setShowCommunity] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
   // ログイン時、履歴があればマイページを表示
@@ -46,6 +49,12 @@ function AppContent() {
     }
   };
 
+  /** コミュニティデザインを親として選択 */
+  const handleSelectCommunityDesign = (genome: Genome) => {
+    evolution.selectParent(genome);
+    setShowCommunity(false);
+  };
+
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center px-4 py-12 gap-8 relative">
       {/* Header with User Menu */}
@@ -72,6 +81,18 @@ function AppContent() {
         </div>
       </header>
 
+      {/* Community Designs Button - 左サイドバー */}
+      <div className="fixed left-4 top-1/2 -translate-y-1/2 z-40">
+        <button
+          type="button"
+          onClick={() => setShowCommunity(true)}
+          className="px-3 py-4 bg-neutral-900/90 border border-neutral-700 text-neutral-400 hover:text-orange-400 hover:border-orange-500 transition-colors text-sm writing-mode-vertical"
+          style={{ writingMode: 'vertical-rl' }}
+        >
+          🌐 他ユーザーの作品を親にする
+        </button>
+      </div>
+
       {/* Main content */}
       <div className="relative z-10 w-full">
         {showMyPage && isLoggedIn ? (
@@ -97,6 +118,14 @@ function AppContent() {
           <BreederGrid />
         )}
       </div>
+
+      {/* Community Designs Modal */}
+      {showCommunity && (
+        <CommunityDesignsModal
+          onSelect={handleSelectCommunityDesign}
+          onClose={() => setShowCommunity(false)}
+        />
+      )}
     </div>
   );
 }
