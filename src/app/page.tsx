@@ -81,13 +81,12 @@ function AppContent() {
         </div>
       </header>
 
-      {/* Community Designs Button - 左サイドバー */}
-      <div className="fixed left-4 top-1/2 -translate-y-1/2 z-40">
+      {/* Community Designs Button - 画面下部中央 */}
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40">
         <button
           type="button"
           onClick={() => setShowCommunity(true)}
-          className="px-3 py-4 bg-neutral-900/90 border border-neutral-700 text-neutral-400 hover:text-orange-400 hover:border-orange-500 transition-colors text-sm writing-mode-vertical"
-          style={{ writingMode: 'vertical-rl' }}
+          className="px-4 py-2 bg-neutral-900/90 border border-neutral-700 text-neutral-400 hover:text-orange-400 hover:border-orange-500 transition-colors text-sm rounded-full backdrop-blur-sm"
         >
           🌐 他ユーザーの作品を親にする
         </button>
