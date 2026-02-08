@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xcopy:*)",
+      "Bash(powershell -Command \"Copy-Item -Path ''picbraeder-temp\\\\*'' -Destination ''.'' -Recurse -Force; Copy-Item -Path ''picbraeder-temp\\\\.gitignore'' -Destination ''.'' -Force; Copy-Item -Path ''picbraeder-temp\\\\.git'' -Destination ''.'' -Recurse -Force\")",
+      "Bash(powershell -Command \"Remove-Item -Path ''picbraeder-temp'' -Recurse -Force\")",
+      "Bash(powershell:*)"
+    ]
+  }
+}
