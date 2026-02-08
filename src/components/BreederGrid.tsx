@@ -1,9 +1,8 @@
 'use client';
 
 /**
- * BreederGrid — Right: 3×3 evolution grid.
+ * BreederGrid — Left: HowTo. Right: 3×3 evolution grid.
  * Supports: single-click evolve, Shift+click multi-select, save, auto-explore, purchase.
- * Galleryとコミュニティ作品は別ページ（CommunityDesignsModal）に移動済み
  */
 
 import { useState } from 'react';
@@ -37,9 +36,60 @@ export default function BreederGrid() {
 
   return (
     <>
-      {/* 背景は黒 - BackgroundMosaicとGalleryを削除済み */}
-      <div className="flex justify-center w-full max-w-[800px] mx-auto relative z-10">
-        {/* Breeder Grid */}
+      <div className="flex gap-8 w-full max-w-[1100px] mx-auto relative z-10">
+        {/* Left: How to Use - スタイリッシュな説明 */}
+        <div className="w-56 shrink-0 hidden lg:block">
+          <div className="sticky top-24 space-y-6">
+            <div className="border-l-2 border-orange-500 pl-4">
+              <h3 className="text-xs uppercase tracking-[0.2em] text-orange-400 mb-3">
+                How to Use
+              </h3>
+              <ul className="space-y-4 text-sm text-neutral-400">
+                <li className="flex gap-3">
+                  <span className="text-orange-500 font-bold">01</span>
+                  <span>好きなパターンを<br />クリック</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-orange-500 font-bold">02</span>
+                  <span>進化を<br />繰り返す</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-orange-500 font-bold">03</span>
+                  <span>気に入ったら<br />購入する</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="border-l-2 border-neutral-700 pl-4">
+              <h3 className="text-xs uppercase tracking-[0.2em] text-neutral-500 mb-3">
+                Tips
+              </h3>
+              <ul className="space-y-3 text-xs text-neutral-500">
+                <li className="flex items-start gap-2">
+                  <span className="text-neutral-600">▸</span>
+                  <span>Shift+クリックで複数選択、交配可能</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-neutral-600">▸</span>
+                  <span>「自動探索」で新規性の高いパターンを発見</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-neutral-600">▸</span>
+                  <span>「+」ボタンで作品を保存</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="pt-4 border-t border-neutral-800">
+              <p className="text-[10px] text-neutral-600 leading-relaxed">
+                CPPN-NEAT AIが生成<br />
+                唯一無二のキーホルダー
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Breeder Grid */}
         <div className="flex-1 flex flex-col items-center gap-6">
           {/* Header */}
           <div className="flex items-center gap-3 flex-wrap justify-center">
@@ -75,13 +125,17 @@ export default function BreederGrid() {
             )}
           </div>
 
-          {/* Instructions */}
-          <div className="flex items-center gap-4 text-xs text-neutral-500 flex-wrap justify-center">
+          {/* Instructions (mobile) */}
+          <div className="flex items-center gap-4 text-xs text-neutral-500 flex-wrap justify-center lg:hidden">
             <p>クリックで進化 / Shift+クリックで複数選択</p>
-            {archiveSize > 0 && (
-              <span className="text-neutral-600">Archive: {archiveSize}</span>
-            )}
           </div>
+
+          {/* Archive info */}
+          {archiveSize > 0 && (
+            <div className="text-xs text-neutral-600">
+              Archive: {archiveSize}
+            </div>
+          )}
 
           {/* 3×3 Grid */}
           <div className="grid grid-cols-3 gap-2 w-full max-w-[720px]">
