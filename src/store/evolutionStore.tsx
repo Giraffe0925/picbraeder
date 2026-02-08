@@ -5,6 +5,7 @@
  *
  * Novelty Search 統合 + ブランチング + 複数親選択
  * セッション保存・復元機能付き
+ * 進化履歴の記録機能付き
  */
 
 import { createContext, useContext, useCallback, useState, useEffect, type ReactNode } from 'react';
@@ -22,6 +23,7 @@ import {
 } from '@/lib/cppn/noveltySearch';
 import type { SavedWork } from '@/lib/cppn/savedWorks';
 import { useUser } from '@/store/userStore';
+import { trackEvolutionEvent, type EvolutionEvent } from '@/lib/analytics/evolutionTracker';
 
 const GRID_SIZE = 9; // 3 × 3
 const EXPLORE_CANDIDATES = 20;
@@ -57,7 +59,7 @@ interface EvolutionContextType extends EvolutionState {
 const EvolutionContext = createContext<EvolutionContextType | null>(null);
 
 export function EvolutionProvider({ children }: { children: ReactNode }) {
-  const { isLoggedIn, userData, saveUserData } = useUser();
+  const { isLoggedIn, userId, userEmail, currentUser, userData, saveUserData } = useUser();
 
   const [state, setState] = useState<EvolutionState>(() => ({
     generation: 0,
@@ -110,18 +112,36 @@ export function EvolutionProvider({ children }: { children: ReactNode }) {
   }, [isLoggedIn, saveUserData]);
 
   const select = useCallback((genome: Genome) => {
-    const parent: Genome = {
-      id: genome.id,
-      fitness: 1,
-      nodes: genome.nodes.map(n => ({ ...n })),
-      connections: genome.connections.map(c => ({ ...c })),
-    };
-    const children = breedNextGeneration([parent], GRID_SIZE);
-    let population = children;
-    try { population = evaluateNovelty(children); } catch { /* optional */ }
-    const archiveSize = getNoveltyArchive().size;
-
     setState(prev => {
+      // 選択しなかったパターンのID
+      const rejectedIds = prev.population
+        .filter(g => g.id !== genome.id)
+        .map(g => g.id);
+
+      // 進化履歴を記録
+      const event: EvolutionEvent = {
+        userId: userId || 'anonymous',
+        userEmail: userEmail || undefined,
+        userName: currentUser || undefined,
+        timestamp: Date.now(),
+        generation: prev.generation + 1,
+        selectedGenomeId: genome.id,
+        rejectedGenomeIds: rejectedIds,
+        actionType: 'select',
+      };
+      trackEvolutionEvent(event);
+
+      const parent: Genome = {
+        id: genome.id,
+        fitness: 1,
+        nodes: genome.nodes.map(n => ({ ...n })),
+        connections: genome.connections.map(c => ({ ...c })),
+      };
+      const children = breedNextGeneration([parent], GRID_SIZE);
+      let population = children;
+      try { population = evaluateNovelty(children); } catch { /* optional */ }
+      const archiveSize = getNoveltyArchive().size;
+
       const newState = {
         ...prev,
         generation: prev.generation + 1,
@@ -132,7 +152,7 @@ export function EvolutionProvider({ children }: { children: ReactNode }) {
       saveSession(newState);
       return newState;
     });
-  }, [saveSession]);
+  }, [saveSession, userData]);
 
   const toggleSelect = useCallback((genomeId: string) => {
     setState(prev => {
@@ -152,6 +172,25 @@ export function EvolutionProvider({ children }: { children: ReactNode }) {
         .filter(g => prev.selectedIds.has(g.id))
         .map(g => ({ ...g, fitness: 1 }));
       if (parents.length === 0) return prev;
+
+      // 選択しなかったパターンのID
+      const rejectedIds = prev.population
+        .filter(g => !prev.selectedIds.has(g.id))
+        .map(g => g.id);
+
+      // 進化履歴を記録
+      const event: EvolutionEvent = {
+        userId: userId || 'anonymous',
+        userEmail: userEmail || undefined,
+        userName: currentUser || undefined,
+        timestamp: Date.now(),
+        generation: prev.generation + 1,
+        selectedGenomeId: parents.map(p => p.id).join(','),
+        rejectedGenomeIds: rejectedIds,
+        actionType: 'breed',
+      };
+      trackEvolutionEvent(event);
+
       const children = breedNextGeneration(parents, GRID_SIZE);
       let population = children;
       try { population = evaluateNovelty(children); } catch { /* optional */ }
@@ -166,7 +205,7 @@ export function EvolutionProvider({ children }: { children: ReactNode }) {
       saveSession(newState);
       return newState;
     });
-  }, [saveSession]);
+  }, [saveSession, userId, userEmail, currentUser]);
 
   const selectParent = useCallback((genome: Genome) => {
     const parent: Genome = {
@@ -201,6 +240,19 @@ export function EvolutionProvider({ children }: { children: ReactNode }) {
       );
       const bestNovel = sortedByNovelty[0];
 
+      // 進化履歴を記録
+      const event: EvolutionEvent = {
+        userId: userId || 'anonymous',
+        userEmail: userEmail || undefined,
+        userName: currentUser || undefined,
+        timestamp: Date.now(),
+        generation: prev.generation + 1,
+        selectedGenomeId: bestNovel.id,
+        rejectedGenomeIds: prev.population.filter(g => g.id !== bestNovel.id).map(g => g.id),
+        actionType: 'auto-explore',
+      };
+      trackEvolutionEvent(event);
+
       const newChildren: Genome[] = [];
       newChildren.push({ ...bestNovel, fitness: 0 });
 
@@ -221,7 +273,7 @@ export function EvolutionProvider({ children }: { children: ReactNode }) {
       saveSession(newState);
       return newState;
     });
-  }, [saveSession]);
+  }, [saveSession, userId, userEmail, currentUser]);
 
   const save = useCallback((genome: Genome, name: string) => {
     setState(prev => {

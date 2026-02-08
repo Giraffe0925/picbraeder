@@ -35,6 +35,8 @@ export interface SessionData {
 
 interface UserContextType {
     currentUser: string | null;
+    userId: string | null;
+    userEmail: string | null;
     isLoggedIn: boolean;
     userData: UserData | null;
     userImage: string | null;
@@ -154,8 +156,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
         });
     }, [userId]);
 
+    const userEmail = session?.user?.email || null;
+
     const value: UserContextType = {
         currentUser,
+        userId,
+        userEmail,
         isLoggedIn,
         userData,
         userImage,
