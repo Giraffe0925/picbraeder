@@ -7,11 +7,13 @@ import CommunityDesignsModal from '@/components/CommunityDesignsModal';
 import { EvolutionProvider, useEvolutionStore, type SessionData } from '@/store/evolutionStore';
 import { UserProvider, useUser, type SessionHistory } from '@/store/userStore';
 import UserMenu from '@/components/UserMenu';
+import { isAdmin } from '@/lib/analytics/evolutionTracker';
 import type { Genome } from '@/lib/cppn/genome';
 
 /** メインアプリケーションのラッパー（内部コンポーネント） */
 function AppContent() {
-  const { isLoggedIn, userData, saveToHistory } = useUser();
+  const { isLoggedIn, userEmail, userData, saveToHistory } = useUser();
+  const isAdminUser = isAdmin(userEmail);
   const evolution = useEvolutionStore();
   const [showMyPage, setShowMyPage] = useState(false);
   const [showCommunity, setShowCommunity] = useState(false);
@@ -84,6 +86,15 @@ function AppContent() {
             >
               {showMyPage ? '← Back' : '📁 My Page'}
             </button>
+          )}
+          {/* 管理者のみ表示 */}
+          {isAdminUser && (
+            <a
+              href="/admin"
+              className="px-3 py-1.5 text-sm border border-purple-600 text-purple-400 hover:bg-purple-500 hover:text-white hover:border-purple-500 transition-colors whitespace-nowrap"
+            >
+              🔧 管理
+            </a>
           )}
           <UserMenu />
         </div>
