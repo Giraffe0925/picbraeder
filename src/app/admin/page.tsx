@@ -7,12 +7,13 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { isAdmin, type EvolutionEvent, type UserSummary } from '@/lib/analytics/evolutionTracker';
+import { isAdmin, type EvolutionEvent, type UserSummary, getLocalHistory } from '@/lib/analytics/evolutionTracker';
 
 interface AnalyticsSummary {
     totalUsers: number;
     totalEvents: number;
     message?: string;
+    isLocalMode?: boolean;
 }
 
 export default function AdminPage() {
@@ -43,6 +44,47 @@ export default function AdminPage() {
                 if (summaryRes.ok) {
                     const summaryData = await summaryRes.json();
                     setSummary(summaryData);
+
+                    // KV not configured の場合、localStorageから直接読み取る
+                    if (summaryData.message === 'KV not configured') {
+                        const localHistory = getLocalHistory();
+
+                        // ユーザー別に集計
+                        const userMap = new Map<string, UserSummary>();
+
+                        localHistory.forEach(event => {
+                            const existing = userMap.get(event.userId);
+                            if (existing) {
+                                existing.lastSeen = Math.max(existing.lastSeen, event.timestamp);
+                                existing.totalEvents += 1;
+                                existing.totalGenerations = Math.max(existing.totalGenerations, event.generation);
+                            } else {
+                                userMap.set(event.userId, {
+                                    userId: event.userId,
+                                    userEmail: event.userEmail,
+                                    userName: event.userName,
+                                    firstSeen: event.timestamp,
+                                    lastSeen: event.timestamp,
+                                    totalEvents: 1,
+                                    totalGenerations: event.generation,
+                                });
+                            }
+                        });
+
+                        const localUsers = Array.from(userMap.values());
+                        localUsers.sort((a, b) => b.lastSeen - a.lastSeen);
+
+                        // ローカルデータで上書き
+                        setSummary({
+                            totalUsers: localUsers.length,
+                            totalEvents: localHistory.length,
+                            isLocalMode: true,
+                        });
+                        setUsers(localUsers);
+                        setEvents(localHistory);
+                        setLoading(false);
+                        return;
+                    }
                 }
 
                 // ユーザー一覧を取得
@@ -129,10 +171,10 @@ export default function AdminPage() {
                     </div>
                 )}
 
-                {/* KV未設定の警告 */}
-                {summary?.message === 'KV not configured' && (
-                    <div className="mb-4 p-4 bg-yellow-900/50 border border-yellow-700 text-yellow-300 rounded">
-                        <strong>注意:</strong> Vercel KVが設定されていません。データはローカルに保存されていますが、サーバー側での分析はできません。
+                {/* ローカルモード情報 */}
+                {summary?.isLocalMode && (
+                    <div className="mb-4 p-4 bg-blue-900/50 border border-blue-700 text-blue-300 rounded">
+                        <strong>ℹ️ 情報:</strong> ブラウザのlocalStorageに保存されたデータを表示しています。
                     </div>
                 )}
 
