@@ -55,7 +55,7 @@ export default function BreederGrid() {
                 </li>
                 <li className="flex gap-3">
                   <span className="text-orange-500 font-bold">03</span>
-                  <span>気に入ったら<br />購入する</span>
+                  <span>気に入ったら<br />「購入する」をクリック</span>
                 </li>
               </ul>
             </div>
@@ -78,6 +78,19 @@ export default function BreederGrid() {
                   <span>「+」ボタンで作品を保存</span>
                 </li>
               </ul>
+            </div>
+
+            {/* 購入に関する安心情報 */}
+            <div className="border-l-2 border-emerald-600 pl-4 bg-emerald-950/30 py-2 -ml-[2px] rounded-r">
+              <h3 className="text-xs uppercase tracking-[0.2em] text-emerald-400 mb-2">
+                安心の購入
+              </h3>
+              <p className="text-[11px] text-neutral-400 leading-relaxed">
+                「購入する」ボタンを押しても<br />
+                <span className="text-emerald-400">まだ購入は確定しません。</span><br />
+                SUZURIのサイトに移動後、<br />
+                お支払い手続きで確定します。
+              </p>
             </div>
 
             <div className="pt-4 border-t border-neutral-800">
