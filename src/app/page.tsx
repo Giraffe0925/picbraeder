@@ -49,7 +49,7 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center px-4 py-12 gap-8 relative">
       {/* Header with User Menu */}
-      <header className="w-full max-w-4xl flex justify-between items-center relative z-10">
+      <header className="w-full max-w-4xl flex justify-between items-center relative z-50">
         <div className="text-center flex-1">
           <h1 className="text-2xl font-light tracking-[0.3em] uppercase">
             The Accidental Keychain
@@ -58,7 +58,7 @@ function AppContent() {
             Select. Evolve. Discover.
           </p>
         </div>
-        <div className="absolute right-0 top-0 flex items-center gap-2">
+        <div className="absolute right-0 top-0 flex items-center gap-2 z-50">
           {isLoggedIn && (
             <button
               type="button"
