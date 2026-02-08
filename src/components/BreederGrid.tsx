@@ -82,9 +82,6 @@ export default function BreederGrid() {
 
             {/* 購入に関する安心情報 */}
             <div className="border-l-2 border-emerald-600 pl-4 bg-emerald-950/30 py-2 -ml-[2px] rounded-r">
-              <h3 className="text-xs uppercase tracking-[0.2em] text-emerald-400 mb-2">
-                安心の購入
-              </h3>
               <p className="text-[11px] text-neutral-400 leading-relaxed">
                 「購入する」ボタンを押しても<br />
                 <span className="text-emerald-400">まだ購入は確定しません。</span><br />
