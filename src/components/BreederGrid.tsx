@@ -1,14 +1,13 @@
 'use client';
 
 /**
- * BreederGrid — Left: Gallery. Right: 3×3 evolution grid.
+ * BreederGrid — Right: 3×3 evolution grid.
  * Supports: single-click evolve, Shift+click multi-select, save, auto-explore, purchase.
+ * Galleryとコミュニティ作品は別ページ（CommunityDesignsModal）に移動済み
  */
 
 import { useState } from 'react';
 import PicCanvas from './PicCanvas';
-import Gallery from './Gallery';
-import BackgroundMosaic from './BackgroundMosaic';
 import InspectorModal from './InspectorModal';
 import { useEvolutionStore } from '@/store/evolutionStore';
 import type { Genome } from '@/lib/cppn/genome';
@@ -22,13 +21,10 @@ export default function BreederGrid() {
     toggleSelect,
     breedFromSelected,
     selectedIds,
-    selectParent,
     reset,
     autoExplore,
     archiveSize,
     save,
-    savedWorks,
-    removeSaved,
   } = useEvolutionStore();
 
   const handleGridClick = (genome: Genome, e: React.MouseEvent) => {
@@ -41,18 +37,9 @@ export default function BreederGrid() {
 
   return (
     <>
-      <BackgroundMosaic onSelectParent={selectParent} />
-      <div className="flex gap-8 w-full max-w-[1100px] relative z-10">
-        {/* Left: Gallery */}
-        <div className="w-64 shrink-0">
-          <Gallery
-            onSelectParent={selectParent}
-            savedWorks={savedWorks}
-            onDeleteSaved={removeSaved}
-          />
-        </div>
-
-        {/* Right: Breeder */}
+      {/* 背景は黒 - BackgroundMosaicとGalleryを削除済み */}
+      <div className="flex justify-center w-full max-w-[800px] mx-auto relative z-10">
+        {/* Breeder Grid */}
         <div className="flex-1 flex flex-col items-center gap-6">
           {/* Header */}
           <div className="flex items-center gap-3 flex-wrap justify-center">

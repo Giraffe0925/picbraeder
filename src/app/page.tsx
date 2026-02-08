@@ -58,21 +58,29 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center px-4 py-12 gap-8 relative">
       {/* Header with User Menu */}
-      <header className="w-full max-w-4xl flex justify-between items-center relative z-50">
-        <div className="text-center flex-1">
-          <h1 className="text-2xl font-light tracking-[0.3em] uppercase">
+      <header className="w-full max-w-4xl flex justify-between items-start relative z-50 gap-4">
+        <div className="text-left shrink-0">
+          <h1 className="text-xl font-light tracking-[0.2em] uppercase">
             The Accidental Keychain
           </h1>
-          <p className="mt-2 text-xs text-neutral-500 tracking-wide">
+          <p className="mt-1 text-xs text-neutral-500 tracking-wide">
             Select. Evolve. Discover.
           </p>
         </div>
-        <div className="absolute right-0 top-0 flex items-center gap-2 z-50">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          {/* コミュニティ作品ボタン */}
+          <button
+            type="button"
+            onClick={() => setShowCommunity(true)}
+            className="px-3 py-1.5 text-sm border border-orange-600 text-orange-400 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors whitespace-nowrap"
+          >
+            🌐 他作品を親に
+          </button>
           {isLoggedIn && (
             <button
               type="button"
               onClick={() => setShowMyPage(!showMyPage)}
-              className="px-3 py-1.5 text-sm border border-neutral-600 text-neutral-400 hover:text-white hover:border-neutral-400 transition-colors"
+              className="px-3 py-1.5 text-sm border border-neutral-600 text-neutral-400 hover:text-white hover:border-neutral-400 transition-colors whitespace-nowrap"
             >
               {showMyPage ? '← Back' : '📁 My Page'}
             </button>
@@ -80,17 +88,6 @@ function AppContent() {
           <UserMenu />
         </div>
       </header>
-
-      {/* Community Designs Button - 画面下部中央 */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40">
-        <button
-          type="button"
-          onClick={() => setShowCommunity(true)}
-          className="px-4 py-2 bg-neutral-900/90 border border-neutral-700 text-neutral-400 hover:text-orange-400 hover:border-orange-500 transition-colors text-sm rounded-full backdrop-blur-sm"
-        >
-          🌐 他ユーザーの作品を親にする
-        </button>
-      </div>
 
       {/* Main content */}
       <div className="relative z-10 w-full">
