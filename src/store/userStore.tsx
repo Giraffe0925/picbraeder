@@ -1,8 +1,8 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
+import { useSession } from 'next-auth/react';
 
-const CURRENT_USER_KEY = 'picbraeder_current_user';
 const USER_DATA_PREFIX = 'picbraeder_user_';
 
 /** セッション履歴の型 */
@@ -36,9 +36,8 @@ export interface SessionData {
 interface UserContextType {
     currentUser: string | null;
     isLoggedIn: boolean;
-    login: (username: string) => void;
-    logout: () => void;
     userData: UserData | null;
+    userImage: string | null;
     saveUserData: (data: Partial<UserData>) => void;
     saveToHistory: (name: string, thumbnail?: string) => void;
     deleteHistory: (historyId: string) => void;
@@ -47,10 +46,10 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | null>(null);
 
-function loadUserData(username: string): UserData {
+function loadUserData(userId: string): UserData {
     if (typeof window === 'undefined') return { savedWorks: [], session: null, history: [] };
     try {
-        const raw = localStorage.getItem(USER_DATA_PREFIX + username);
+        const raw = localStorage.getItem(USER_DATA_PREFIX + userId);
         if (!raw) return { savedWorks: [], session: null, history: [] };
         const data = JSON.parse(raw) as UserData;
         // 履歴がない場合は空配列を追加
@@ -61,9 +60,9 @@ function loadUserData(username: string): UserData {
     }
 }
 
-function saveUserDataToStorage(username: string, data: UserData): void {
+function saveUserDataToStorage(userId: string, data: UserData): void {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(USER_DATA_PREFIX + username, JSON.stringify(data));
+    localStorage.setItem(USER_DATA_PREFIX + userId, JSON.stringify(data));
 }
 
 function generateId(): string {
@@ -71,47 +70,39 @@ function generateId(): string {
 }
 
 export function UserProvider({ children }: { children: ReactNode }) {
-    const [currentUser, setCurrentUser] = useState<string | null>(null);
+    const { data: session, status } = useSession();
     const [userData, setUserData] = useState<UserData | null>(null);
 
+    // NextAuthセッションからユーザー情報を取得
+    const currentUser = session?.user?.name || session?.user?.email || null;
+    const userId = session?.user?.id || null;
+    const userImage = session?.user?.image || null;
+    const isLoggedIn = status === 'authenticated' && !!session?.user;
+
+    // セッション変更時にユーザーデータをロード
     useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const saved = localStorage.getItem(CURRENT_USER_KEY);
-        if (saved) {
-            setCurrentUser(saved);
-            setUserData(loadUserData(saved));
+        if (userId) {
+            setUserData(loadUserData(userId));
+        } else {
+            setUserData(null);
         }
-    }, []);
-
-    const login = useCallback((username: string) => {
-        const trimmed = username.trim();
-        if (!trimmed) return;
-        localStorage.setItem(CURRENT_USER_KEY, trimmed);
-        setCurrentUser(trimmed);
-        setUserData(loadUserData(trimmed));
-    }, []);
-
-    const logout = useCallback(() => {
-        localStorage.removeItem(CURRENT_USER_KEY);
-        setCurrentUser(null);
-        setUserData(null);
-    }, []);
+    }, [userId]);
 
     const saveUserData = useCallback((data: Partial<UserData>) => {
-        if (!currentUser) return;
+        if (!userId) return;
         setUserData(prev => {
             const updated: UserData = {
                 savedWorks: data.savedWorks ?? prev?.savedWorks ?? [],
                 session: data.session ?? prev?.session ?? null,
                 history: data.history ?? prev?.history ?? [],
             };
-            saveUserDataToStorage(currentUser, updated);
+            saveUserDataToStorage(userId, updated);
             return updated;
         });
-    }, [currentUser]);
+    }, [userId]);
 
     const saveToHistory = useCallback((name: string, thumbnail?: string) => {
-        if (!currentUser || !userData?.session) return;
+        if (!userId || !userData?.session) return;
 
         const historyEntry: SessionHistory = {
             id: generateId(),
@@ -127,13 +118,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 ...prev,
                 history: [historyEntry, ...prev.history],
             };
-            saveUserDataToStorage(currentUser, updated);
+            saveUserDataToStorage(userId, updated);
             return updated;
         });
-    }, [currentUser, userData?.session]);
+    }, [userId, userData?.session]);
 
     const deleteHistory = useCallback((historyId: string) => {
-        if (!currentUser) return;
+        if (!userId) return;
 
         setUserData(prev => {
             if (!prev) return prev;
@@ -141,13 +132,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 ...prev,
                 history: prev.history.filter(h => h.id !== historyId),
             };
-            saveUserDataToStorage(currentUser, updated);
+            saveUserDataToStorage(userId, updated);
             return updated;
         });
-    }, [currentUser]);
+    }, [userId]);
 
     const deleteSavedWork = useCallback((index: number) => {
-        if (!currentUser) return;
+        if (!userId) return;
 
         setUserData(prev => {
             if (!prev || !prev.savedWorks) return prev;
@@ -158,17 +149,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 ...prev,
                 savedWorks: newSavedWorks,
             };
-            saveUserDataToStorage(currentUser, updated);
+            saveUserDataToStorage(userId, updated);
             return updated;
         });
-    }, [currentUser]);
+    }, [userId]);
 
     const value: UserContextType = {
         currentUser,
-        isLoggedIn: currentUser !== null,
-        login,
-        logout,
+        isLoggedIn,
         userData,
+        userImage,
         saveUserData,
         saveToHistory,
         deleteHistory,
