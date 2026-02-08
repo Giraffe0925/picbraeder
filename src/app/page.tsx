@@ -52,7 +52,7 @@ function AppContent() {
       <header className="w-full max-w-4xl flex justify-between items-center relative z-10">
         <div className="text-center flex-1">
           <h1 className="text-2xl font-light tracking-[0.3em] uppercase">
-            Picbraeder
+            The Accidental Keychain
           </h1>
           <p className="mt-2 text-xs text-neutral-500 tracking-wide">
             Select. Evolve. Discover.
